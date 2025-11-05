@@ -1,6 +1,6 @@
 """API v1 router"""
 from fastapi import APIRouter
-from app.api.v1.endpoints import configurations, comparisons, security, templates, gam
+from app.api.v1.endpoints import configurations, comparisons, security, templates, gam, gam_stream
 
 api_router = APIRouter()
 
@@ -32,5 +32,11 @@ api_router.include_router(
     gam.router,
     prefix="/gam",
     tags=["gam"]
+)
+
+api_router.include_router(
+    gam_stream.router,
+    prefix="/gam",
+    tags=["gam-streaming"]
 )
 

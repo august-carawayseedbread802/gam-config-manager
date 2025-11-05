@@ -9,7 +9,7 @@ import type {
   GAMExtractResponse,
 } from '@/types'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 const API_V1 = `${API_BASE_URL}/api/v1`
 
 const api = axios.create({
