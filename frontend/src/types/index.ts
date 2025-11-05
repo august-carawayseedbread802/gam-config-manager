@@ -7,6 +7,10 @@ export enum ConfigType {
   DRIVE = 'drive',
   GMAIL = 'gmail',
   SECURITY = 'security',
+  MOBILE = 'mobile',
+  OAUTH_TOKENS = 'oauth_tokens',
+  ADMIN_ROLES = 'admin_roles',
+  SHARED_DRIVES = 'shared_drives',
   OTHER = 'other',
 }
 
