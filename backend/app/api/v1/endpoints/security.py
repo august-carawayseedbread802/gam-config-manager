@@ -26,6 +26,13 @@ async def analyze_configuration(
     if not config:
         raise HTTPException(status_code=404, detail="Configuration not found")
     
+    # Delete existing security analyses for this configuration (prevent duplicates)
+    existing_analyses = await db.execute(
+        select(SecurityAnalysis).where(SecurityAnalysis.configuration_id == config_id)
+    )
+    for existing in existing_analyses.scalars():
+        await db.delete(existing)
+    
     # Perform security analysis
     security_service = SecurityService()
     findings = security_service.analyze_configuration(
@@ -33,7 +40,7 @@ async def analyze_configuration(
         config.config_type
     )
     
-    # Save findings
+    # Save new findings
     db_findings = []
     for finding in findings:
         db_finding = SecurityAnalysis(
