@@ -1,0 +1,287 @@
+import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  CircularProgress,
+  Alert,
+  Tabs,
+  Tab,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+} from '@mui/material'
+import { ArrowBack, Security as SecurityIcon, CompareArrows } from '@mui/icons-material'
+import { configurationsApi, securityApi, comparisonsApi } from '@/services/api'
+
+const ConfigurationDetail = () => {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [tab, setTab] = useState(0)
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false)
+  const [compareTargetId, setCompareTargetId] = useState<number | ''>('')
+
+  const { data: config, isLoading } = useQuery({
+    queryKey: ['configuration', id],
+    queryFn: () => configurationsApi.get(Number(id)).then((res) => res.data),
+  })
+
+  const { data: securityAnalyses } = useQuery({
+    queryKey: ['security-analyses', id],
+    queryFn: () => securityApi.getAnalyses(Number(id)).then((res) => res.data),
+    enabled: !!config,
+  })
+
+  const { data: securityScore } = useQuery({
+    queryKey: ['security-score', id],
+    queryFn: () => securityApi.getScore(Number(id)).then((res) => res.data),
+    enabled: !!config,
+  })
+
+  const { data: allConfigs } = useQuery({
+    queryKey: ['configurations'],
+    queryFn: () => configurationsApi.list().then((res) => res.data),
+  })
+
+  const analyzeMutation = useMutation({
+    mutationFn: () => securityApi.analyze(Number(id)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['security-analyses', id] })
+      queryClient.invalidateQueries({ queryKey: ['security-score', id] })
+    },
+  })
+
+  const compareMutation = useMutation({
+    mutationFn: (targetId: number) =>
+      comparisonsApi.create({
+        source_config_id: Number(id),
+        target_config_id: targetId,
+      }),
+    onSuccess: (response) => {
+      setCompareDialogOpen(false)
+      navigate(`/comparisons`)
+    },
+  })
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!config) {
+    return (
+      <Box>
+        <Alert severity="error">Configuration not found</Alert>
+      </Box>
+    )
+  }
+
+  const handleCompare = () => {
+    if (compareTargetId) {
+      compareMutation.mutate(Number(compareTargetId))
+    }
+  }
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return 'error'
+      case 'high':
+        return 'warning'
+      case 'medium':
+        return 'info'
+      case 'low':
+        return 'success'
+      default:
+        return 'default'
+    }
+  }
+
+  return (
+    <Box>
+      <Button startIcon={<ArrowBack />} onClick={() => navigate('/configurations')} sx={{ mb: 2 }}>
+        Back to Configurations
+      </Button>
+
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          {config.name}
+        </Typography>
+        <Typography variant="body1" color="textSecondary" sx={{ mb: 2 }}>
+          {config.description || 'No description'}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <Chip label={config.config_type} />
+          {config.is_template && <Chip label="Template" color="primary" />}
+        </Box>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            startIcon={<SecurityIcon />}
+            onClick={() => analyzeMutation.mutate()}
+            disabled={analyzeMutation.isPending}
+          >
+            Run Security Analysis
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<CompareArrows />}
+            onClick={() => setCompareDialogOpen(true)}
+          >
+            Compare with Another Config
+          </Button>
+        </Box>
+      </Box>
+
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tab} onChange={(_, newValue) => setTab(newValue)}>
+          <Tab label="Configuration Data" />
+          <Tab label={`Security Analysis ${securityAnalyses ? `(${securityAnalyses.length})` : ''}`} />
+        </Tabs>
+      </Box>
+
+      {tab === 0 && (
+        <Card>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Configuration Data
+            </Typography>
+            <Box
+              component="pre"
+              sx={{
+                p: 2,
+                bgcolor: 'grey.100',
+                borderRadius: 1,
+                overflow: 'auto',
+                maxHeight: '600px',
+              }}
+            >
+              {JSON.stringify(config.config_data, null, 2)}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {tab === 1 && (
+        <Box>
+          {securityScore && (
+            <Card sx={{ mb: 3 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Security Score
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Typography variant="h3" color={securityScore.security_score > 70 ? 'success.main' : 'error.main'}>
+                    {securityScore.security_score}
+                  </Typography>
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      {securityScore.critical_findings} Critical, {securityScore.high_findings} High,{' '}
+                      {securityScore.medium_findings} Medium, {securityScore.low_findings} Low
+                    </Typography>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          )}
+
+          {!securityAnalyses || securityAnalyses.length === 0 ? (
+            <Card>
+              <CardContent>
+                <Typography color="textSecondary">
+                  No security analysis available. Run an analysis to see recommendations.
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {securityAnalyses.map((analysis) => (
+                <Card key={analysis.id}>
+                  <CardContent>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 2 }}>
+                      <Typography variant="h6">{analysis.title}</Typography>
+                      <Chip label={analysis.severity} color={getSeverityColor(analysis.severity) as any} size="small" />
+                    </Box>
+                    <Typography variant="body2" color="textSecondary" paragraph>
+                      {analysis.description}
+                    </Typography>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Recommendation:
+                    </Typography>
+                    <Typography variant="body2" paragraph>
+                      {analysis.recommendation}
+                    </Typography>
+                    {analysis.remediation_steps && analysis.remediation_steps.length > 0 && (
+                      <>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Remediation Steps:
+                        </Typography>
+                        <Box component="ol" sx={{ pl: 2, m: 0 }}>
+                          {analysis.remediation_steps.map((step, idx) => (
+                            <Typography component="li" variant="body2" key={idx}>
+                              {step}
+                            </Typography>
+                          ))}
+                        </Box>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Compare Dialog */}
+      <Dialog open={compareDialogOpen} onClose={() => setCompareDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Compare Configuration</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Target Configuration</InputLabel>
+            <Select
+              value={compareTargetId}
+              onChange={(e) => setCompareTargetId(e.target.value as number)}
+              label="Target Configuration"
+            >
+              {allConfigs
+                ?.filter((c) => c.id !== config.id)
+                .map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCompareDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleCompare}
+            disabled={!compareTargetId || compareMutation.isPending}
+          >
+            Compare
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  )
+}
+
+export default ConfigurationDetail
+

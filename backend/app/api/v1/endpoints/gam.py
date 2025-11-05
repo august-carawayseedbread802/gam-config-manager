@@ -1,0 +1,78 @@
+"""GAM extraction endpoints"""
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.base import get_db
+from app.db.models import Configuration, ConfigType
+from app.schemas.config import GAMExtractRequest, GAMExtractResponse
+from app.services.gam_service import GAMService
+
+router = APIRouter()
+
+
+@router.post("/extract", response_model=GAMExtractResponse)
+async def extract_gam_config(
+    request: GAMExtractRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Extract configuration from GAM"""
+    gam_service = GAMService()
+    
+    # Extract configurations
+    result = await gam_service.extract_all_configs(request.config_types)
+    
+    if not result["success"]:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to extract configurations: {result.get('errors')}"
+        )
+    
+    # Count total items
+    total_items = sum(
+        len(data) if isinstance(data, list) else 1
+        for data in result["data"].values()
+    )
+    
+    # Save to database
+    config_name = request.template_name if request.save_as_template else f"GAM Extract {', '.join(result['data'].keys())}"
+    
+    db_config = Configuration(
+        name=config_name,
+        description=f"Extracted from GAM - Types: {', '.join([t.value for t in request.config_types])}",
+        config_type=request.config_types[0] if len(request.config_types) == 1 else ConfigType.OTHER,
+        config_data=result["data"],
+        is_template=request.save_as_template
+    )
+    
+    db.add(db_config)
+    await db.commit()
+    await db.refresh(db_config)
+    
+    return GAMExtractResponse(
+        success=True,
+        message="Configuration extracted successfully",
+        configuration_id=db_config.id,
+        extracted_types=request.config_types,
+        total_items=total_items
+    )
+
+
+@router.get("/test-connection")
+async def test_gam_connection():
+    """Test GAM connection"""
+    gam_service = GAMService()
+    
+    # Try a simple command
+    result = await gam_service._run_gam_command(["version"])
+    
+    if result["success"]:
+        return {
+            "status": "connected",
+            "message": "GAM is properly configured",
+            "version": result["data"]
+        }
+    else:
+        return {
+            "status": "error",
+            "message": f"Failed to connect to GAM: {result['error']}"
+        }
+
